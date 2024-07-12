@@ -7,24 +7,50 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
+import {IRiscZeroVerifier} from "risc0/IRiscZeroVerifier.sol";
+
+import "./IAppContract.sol";
+
 contract LibreBridgeCore is Initializable, PausableUpgradeable, OwnableUpgradeable, UUPSUpgradeable {
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
-    function initialize(address initialOwner) public initializer {
+    function initialize(address initialOwner, uint256 _thisChainId, bytes32 _imageId) public initializer {
+        thisChainId = _thisChainId;
+        imageId = _imageId;
+
         __Pausable_init();
         __Ownable_init(initialOwner);
         __UUPSUpgradeable_init();
     }
 
     uint256 public thisChainId;
+    bytes32 public imageId;
+    IRiscZeroVerifier public verifier;
+
+    function adminSetThisChainId(uint256 _thisChainId) public onlyOwner {
+        thisChainId = _thisChainId;
+    }
+
+    function adminSetImageId(bytes32 _imageId) public onlyOwner {
+        imageId = _imageId;
+    }
+
+    function adminSetVerifier(address _verifier) public onlyOwner {
+        verifier = IRiscZeroVerifier(_verifier);
+    }
 
     mapping(bytes32 => uint256) public domainNonces;
 
     event PassMessage(
-        bytes32 indexed messageHash, uint256 toChain, address fromAppContract, address toAppContract, bytes message
+        bytes32 messageHash,
+        uint256 fromChainId,
+        uint256 indexed toChainId,
+        address indexed fromAppContract,
+        address indexed toAppContract,
+        bytes message
     );
 
     function passMessage(uint256 toChain, address toAppContract, uint256 nonce, bytes calldata message) public {
@@ -34,9 +60,24 @@ contract LibreBridgeCore is Initializable, PausableUpgradeable, OwnableUpgradeab
 
         bytes32 messageHash = keccak256(abi.encode(thisChainId, nonce, domain));
 
-        emit PassMessage(messageHash, toChain, msg.sender, toAppContract, message);
+        emit PassMessage(messageHash, thisChainId, toChain, msg.sender, toAppContract, message);
 
         domainNonces[domain] += 1;
+    }
+
+    function receiveMessage(
+        uint256 fromChainId,
+        uint256 toChainId,
+        address fromAppContract,
+        IAppContract toAppContract,
+        bytes calldata seal,
+        bytes calldata message
+    ) public {
+        bytes memory journal = abi.encode(fromChainId, toChainId, fromAppContract, toAppContract, message);
+
+        verifier.verify(seal, imageId, sha256(journal));
+
+        toAppContract.handleMessage(fromChainId, toChainId, fromAppContract, message);
     }
 
     function computeDomain(uint256 fromChainId, uint256 toChainId, address fromAppContract, address toAppContract)
