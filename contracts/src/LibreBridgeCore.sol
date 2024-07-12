@@ -42,7 +42,10 @@ contract LibreBridgeCore is Initializable, PausableUpgradeable, OwnableUpgradeab
         verifier = IRiscZeroVerifier(_verifier);
     }
 
+    /// Nonce of domain
     mapping(bytes32 => uint256) public domainNonces;
+    /// chainId => blockhash => blocknumber
+    mapping(uint256 => mapping(bytes32 => uint256)) blockNumberOfChain;
 
     event PassMessage(
         bytes32 messageHash,
@@ -66,6 +69,12 @@ contract LibreBridgeCore is Initializable, PausableUpgradeable, OwnableUpgradeab
     }
 
     function receiveMessage(
+        uint256 latestBlockHeight,
+        bytes32 latestBlockHash,
+        uint256 txBlockHeight,
+        bytes32 txBlockHash,
+        uint256 beginBlockHeight,
+        bytes32 beginBlockHash,
         uint256 fromChainId,
         uint256 toChainId,
         address fromAppContract,
@@ -73,9 +82,29 @@ contract LibreBridgeCore is Initializable, PausableUpgradeable, OwnableUpgradeab
         bytes calldata seal,
         bytes calldata message
     ) public {
-        bytes memory journal = abi.encode(fromChainId, toChainId, fromAppContract, toAppContract, message);
+        require(blockNumberOfChain[fromChainId][beginBlockHash] == beginBlockHeight, "Failed to verify block");
+        require(latestBlockHeight > txBlockHeight && txBlockHeight > beginBlockHeight, "Failed to verify block number");
 
+        bytes memory journal = abi.encode(
+            latestBlockHeight,
+            latestBlockHash,
+            txBlockHeight,
+            txBlockHash,
+            beginBlockHeight,
+            beginBlockHash,
+            fromChainId,
+            toChainId,
+            fromAppContract,
+            toAppContract,
+            message
+        );
+
+        // Verfy proof
         verifier.verify(seal, imageId, sha256(journal));
+
+        blockNumberOfChain[fromChainId][latestBlockHash] = latestBlockHeight;
+        blockNumberOfChain[fromChainId][txBlockHash] = txBlockHeight;
+        blockNumberOfChain[fromChainId][beginBlockHash] = beginBlockHeight;
 
         toAppContract.handleMessage(fromChainId, toChainId, fromAppContract, message);
     }
