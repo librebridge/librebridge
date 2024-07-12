@@ -117,6 +117,14 @@ contract LibreBridgeCore is Initializable, PausableUpgradeable, OwnableUpgradeab
         return keccak256(abi.encode(fromChainId, toChainId, fromAppContract, toAppContract));
     }
 
+    function computeDomainThisChain(uint256 toChainId, address fromAppContract, address toAppContract)
+        public
+        view
+        returns (bytes32)
+    {
+        return computeDomain(thisChainId, toChainId, fromAppContract, toAppContract);
+    }
+
     function pause() public onlyOwner {
         _pause();
     }
