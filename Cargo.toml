@@ -1,4 +1,15 @@
 [workspace]
 resolver = "2"
 
-members = [ "prover-provider","prover-sdk", "verifiers/bsc", "verifiers/core", "verifiers/cosmos", "verifiers/ethereum", "verifiers/polygon"]
+members = [
+  "prover-provider",
+  "prover-sdk",
+  "verifiers/bsc",
+  "verifiers/core",
+  "verifiers/cosmos",
+  "verifiers/ethereum",
+  "verifiers/polygon",
+]
+
+[workspace.dependencies]
+alloy = "0.1.4"
