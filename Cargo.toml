@@ -1,4 +1,4 @@
 [workspace]
 resolver = "2"
 
-members = [ "prover-provider","prover-sdk"]
+members = [ "prover-provider","prover-sdk", "verifiers/bsc", "verifiers/core", "verifiers/cosmos", "verifiers/polygon"]
