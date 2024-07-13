@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./LibreBridgeCore.sol";
 import "./IAppContract.sol";
+import "./LBMintableERC20.sol";
 
 contract ERC20LockMintOutgoing is Initializable, OwnableUpgradeable, UUPSUpgradeable, IAppContract {
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -35,9 +36,22 @@ contract ERC20LockMintOutgoing is Initializable, OwnableUpgradeable, UUPSUpgrade
         __UUPSUpgradeable_init();
     }
 
-    function handleMessage(uint256 fromChainId, uint256 toChainId, address fromAppContract, bytes calldata message)
-        external
-    {}
+    function handleMessage(
+        uint256, /* _fromChainId */
+        uint256, /* _toChainId */
+        address fromAppContract,
+        bytes calldata message
+    ) external {
+        require(fromAppContract == remoteAppContract, "Only support target requirement");
+
+        (address fromToken, address targetToken, address receiver, uint256 amount) =
+            abi.decode(message, (address, address, address, uint256));
+
+        LBMintableERC20 erc20 = LBMintableERC20(targetToken);
+        require(erc20.remoteToken() == fromToken, "fromToken must equal to remoteToken of MintableERC20");
+
+        erc20.mint(receiver, amount);
+    }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }

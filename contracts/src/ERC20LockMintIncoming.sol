@@ -40,10 +40,12 @@ contract ERC20LockMintIncoming is Initializable, OwnableUpgradeable, UUPSUpgrade
         __UUPSUpgradeable_init();
     }
 
-    function depositERC20(uint256 targetChain, IERC20 fromToken, address targetToken, uint256 amount) public {
+    function depositERC20(uint256 targetChain, IERC20 fromToken, address targetToken, address receiver, uint256 amount)
+        public
+    {
         fromToken.safeTransferFrom(msg.sender, address(this), amount);
 
-        bytes memory message = abi.encode(targetToken, amount);
+        bytes memory message = abi.encode(address(fromToken), targetToken, receiver, amount);
 
         bytes32 domain = bridgeCore.computeDomainThisChain(targetChain, address(this), remoteERC20AppContract);
         uint256 nonce = bridgeCore.domainNonces(domain);
