@@ -10,8 +10,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./LibreBridgeCore.sol";
+import "./IAppContract.sol";
 
-contract ERC20Deposit is Initializable, OwnableUpgradeable, UUPSUpgradeable {
+contract ERC20LockMintIncoming is Initializable, OwnableUpgradeable, UUPSUpgradeable, IAppContract {
     using SafeERC20 for IERC20;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -49,6 +50,10 @@ contract ERC20Deposit is Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
         bridgeCore.passMessage(targetChain, remoteERC20AppContract, nonce, message);
     }
+
+    function handleMessage(uint256 fromChainId, uint256 toChainId, address fromAppContract, bytes calldata message)
+        external
+    {}
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }
