@@ -53,9 +53,7 @@ contract ERC20LockMintIncoming is Initializable, OwnableUpgradeable, UUPSUpgrade
         bridgeCore.passMessage(targetChain, remoteERC20AppContract, nonce, message);
     }
 
-    function handleMessage(uint256 fromChainId, uint256 toChainId, address fromAppContract, bytes calldata message)
-        external
-    {}
+    function handleMessage(address fromAppContract, bytes calldata message) external {}
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }

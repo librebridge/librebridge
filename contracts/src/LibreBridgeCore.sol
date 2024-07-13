@@ -82,8 +82,10 @@ contract LibreBridgeCore is Initializable, PausableUpgradeable, OwnableUpgradeab
         bytes calldata seal,
         bytes calldata message
     ) public {
-        require(blockNumberOfChain[fromChainId][beginBlockHash] == beginBlockHeight, "Failed to verify block");
+        require(toChainId == thisChainId, "Target chainid must be this chain");
         require(latestBlockHeight > txBlockHeight && txBlockHeight > beginBlockHeight, "Failed to verify block number");
+
+        require(blockNumberOfChain[fromChainId][beginBlockHash] == beginBlockHeight, "Failed to verify block");
 
         bytes memory journal = abi.encode(
             latestBlockHeight,
@@ -106,7 +108,7 @@ contract LibreBridgeCore is Initializable, PausableUpgradeable, OwnableUpgradeab
         blockNumberOfChain[fromChainId][txBlockHash] = txBlockHeight;
         blockNumberOfChain[fromChainId][beginBlockHash] = beginBlockHeight;
 
-        toAppContract.handleMessage(fromChainId, toChainId, fromAppContract, message);
+        toAppContract.handleMessage(fromAppContract, message);
     }
 
     function computeDomain(uint256 fromChainId, uint256 toChainId, address fromAppContract, address toAppContract)

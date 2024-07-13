@@ -36,12 +36,7 @@ contract ERC20LockMintOutgoing is Initializable, OwnableUpgradeable, UUPSUpgrade
         __UUPSUpgradeable_init();
     }
 
-    function handleMessage(
-        uint256, /* _fromChainId */
-        uint256, /* _toChainId */
-        address fromAppContract,
-        bytes calldata message
-    ) external {
+    function handleMessage(address fromAppContract, bytes calldata message) external {
         require(fromAppContract == remoteAppContract, "Only support target requirement");
 
         (address fromToken, address targetToken, address receiver, uint256 amount) =
