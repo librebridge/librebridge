@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./LibreBridgeCore.sol";
+import "./LibreBridgeLib.sol";
 import "./IAppContract.sol";
 
 contract ERC20LockMintIncoming is Initializable, OwnableUpgradeable, UUPSUpgradeable, IAppContract {
@@ -47,7 +48,7 @@ contract ERC20LockMintIncoming is Initializable, OwnableUpgradeable, UUPSUpgrade
 
         bytes memory message = abi.encode(address(fromToken), targetToken, receiver, amount);
 
-        bytes32 domain = bridgeCore.computeDomainThisChain(targetChain, address(this), remoteERC20AppContract);
+        bytes32 domain = LibreBridgeLib.computeDomainThisChain(targetChain, address(this), remoteERC20AppContract);
         uint256 nonce = bridgeCore.domainNonces(domain);
 
         bridgeCore.passMessage(targetChain, remoteERC20AppContract, nonce, message);

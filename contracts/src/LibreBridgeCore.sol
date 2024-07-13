@@ -11,14 +11,15 @@ import {IRiscZeroVerifier} from "risc0/IRiscZeroVerifier.sol";
 
 import "./IAppContract.sol";
 
+import "./LibreBridgeLib.sol";
+
 contract LibreBridgeCore is Initializable, PausableUpgradeable, OwnableUpgradeable, UUPSUpgradeable {
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
-    function initialize(address initialOwner, uint256 _thisChainId, bytes32 _imageId) public initializer {
-        thisChainId = _thisChainId;
+    function initialize(address initialOwner, bytes32 _imageId) public initializer {
         imageId = _imageId;
 
         __Pausable_init();
@@ -26,13 +27,8 @@ contract LibreBridgeCore is Initializable, PausableUpgradeable, OwnableUpgradeab
         __UUPSUpgradeable_init();
     }
 
-    uint256 public thisChainId;
     bytes32 public imageId;
     IRiscZeroVerifier public verifier;
-
-    function adminSetThisChainId(uint256 _thisChainId) public onlyOwner {
-        thisChainId = _thisChainId;
-    }
 
     function adminSetImageId(bytes32 _imageId) public onlyOwner {
         imageId = _imageId;
@@ -49,21 +45,20 @@ contract LibreBridgeCore is Initializable, PausableUpgradeable, OwnableUpgradeab
 
     event PassMessage(
         bytes32 messageHash,
-        uint256 fromChainId,
         uint256 indexed toChainId,
         address indexed fromAppContract,
         address indexed toAppContract,
         bytes message
     );
 
-    function passMessage(uint256 toChain, address toAppContract, uint256 nonce, bytes calldata message) public {
-        bytes32 domain = computeDomain(thisChainId, toChain, msg.sender, toAppContract);
+    function passMessage(uint256 toChainId, address toAppContract, uint256 nonce, bytes calldata message) public {
+        bytes32 domain = LibreBridgeLib.computeDomain(block.chainid, toChainId, msg.sender, toAppContract);
 
         require(domainNonces[domain] == nonce, "Target nonce must be same");
 
-        bytes32 messageHash = keccak256(abi.encode(thisChainId, nonce, domain));
+        bytes32 messageHash = LibreBridgeLib.computeMessageHashThisChain(toChainId, nonce, domain);
 
-        emit PassMessage(messageHash, thisChainId, toChain, msg.sender, toAppContract, message);
+        emit PassMessage(messageHash, toChainId, msg.sender, toAppContract, message);
 
         domainNonces[domain] += 1;
     }
@@ -82,7 +77,7 @@ contract LibreBridgeCore is Initializable, PausableUpgradeable, OwnableUpgradeab
         bytes calldata seal,
         bytes calldata message
     ) public {
-        require(toChainId == thisChainId, "Target chainid must be this chain");
+        require(toChainId == block.chainid, "Target chainid must be this chain");
         require(latestBlockHeight > txBlockHeight && txBlockHeight > beginBlockHeight, "Failed to verify block number");
 
         require(blockNumberOfChain[fromChainId][beginBlockHash] == beginBlockHeight, "Failed to verify block");
@@ -109,22 +104,6 @@ contract LibreBridgeCore is Initializable, PausableUpgradeable, OwnableUpgradeab
         blockNumberOfChain[fromChainId][beginBlockHash] = beginBlockHeight;
 
         toAppContract.handleMessage(fromAppContract, message);
-    }
-
-    function computeDomain(uint256 fromChainId, uint256 toChainId, address fromAppContract, address toAppContract)
-        public
-        pure
-        returns (bytes32)
-    {
-        return keccak256(abi.encode(fromChainId, toChainId, fromAppContract, toAppContract));
-    }
-
-    function computeDomainThisChain(uint256 toChainId, address fromAppContract, address toAppContract)
-        public
-        view
-        returns (bytes32)
-    {
-        return computeDomain(thisChainId, toChainId, fromAppContract, toAppContract);
     }
 
     function pause() public onlyOwner {
