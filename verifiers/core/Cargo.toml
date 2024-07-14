@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 alloy = { workspace = true, features = ["consensus"] }
+anyhow.workspace = true

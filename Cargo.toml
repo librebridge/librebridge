@@ -13,3 +13,4 @@ members = [
 
 [workspace.dependencies]
 alloy = "0.1.4"
+anyhow = "1.0.86"
