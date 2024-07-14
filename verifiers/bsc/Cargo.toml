@@ -4,3 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+alloy = { workspace = true, features = ["rlp"] }
+alloy-rlp.workspace = true
+
+anyhow.workspace = true
+hex.workspace = true
+log.workspace = true
+
+[dev-dependencies]
+env_logger.workspace = true
