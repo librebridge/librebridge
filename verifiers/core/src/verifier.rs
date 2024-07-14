@@ -25,6 +25,8 @@ where
     C: ConsensusVerifier,
 {
     pub fn new(consensus: C, headers: Vec<Header>) -> Result<Self> {
+        let mut consensus = consensus;
+
         let mut hs = BTreeMap::new();
         let mut ps = BTreeMap::new();
         let mut latest_height = 0;
@@ -99,7 +101,7 @@ mod tests {
     impl ConsensusVerifier for MockConensusVerifier {
         type ConsensusParams = u64;
 
-        fn params(&self, _header: &alloy::consensus::Header) -> Result<Self::ConsensusParams> {
+        fn params(&mut self, _header: &alloy::consensus::Header) -> Result<Self::ConsensusParams> {
             Ok(0)
         }
 
