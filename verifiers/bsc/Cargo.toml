@@ -11,5 +11,7 @@ anyhow.workspace = true
 hex.workspace = true
 log.workspace = true
 
+librebridge-verifier-core.workspace = true
+
 [dev-dependencies]
 env_logger.workspace = true

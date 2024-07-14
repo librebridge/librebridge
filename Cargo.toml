@@ -12,6 +12,8 @@ members = [
 ]
 
 [workspace.dependencies]
+librebridge-verifier-core = { version = "0.1", path = "./verifiers/core" }
+
 alloy = "0.1.4"
 alloy-rlp = "0.3.7"
 
