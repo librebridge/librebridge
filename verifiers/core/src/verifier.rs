@@ -24,7 +24,7 @@ impl<C> BlockVerifier<C>
 where
     C: ConsensusVerifier,
 {
-    pub fn new(consensus: C, headers: &[Header]) -> Result<Self> {
+    pub fn new(consensus: C, headers: Vec<Header>) -> Result<Self> {
         let mut hs = BTreeMap::new();
         let mut ps = BTreeMap::new();
         let mut latest_height = 0;
@@ -35,8 +35,6 @@ where
         for h in headers {
             let hash = h.hash_slow();
 
-            hs.insert(hash, h.clone());
-
             if h.number > latest_height {
                 latest_height = h.number;
                 latest_hash = hash;
@@ -46,8 +44,9 @@ where
                 begin_height = h.number;
             }
 
-            let param = consensus.params(h)?;
+            let param = consensus.params(&h)?;
             ps.insert(hash, param);
+            hs.insert(hash, h);
         }
 
         Ok(Self {
@@ -81,8 +80,58 @@ where
             ))?;
 
             self.consensus.verify(consensus_params, h)?;
+
+            log::info!("Height: {current_height}, Hash: {current_hash} verified");
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use anyhow::Result;
+
+    use crate::{BlockVerifier, ConsensusVerifier};
+
+    struct MockConensusVerifier;
+
+    impl ConsensusVerifier for MockConensusVerifier {
+        type ConsensusParams = u64;
+
+        fn params(&self, _header: &alloy::consensus::Header) -> Result<Self::ConsensusParams> {
+            Ok(0)
+        }
+
+        fn verify(
+            &self,
+            _params: &Self::ConsensusParams,
+            _next_header: &alloy::consensus::Header,
+        ) -> Result<()> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn test_verify_block() {
+        let _ = env_logger::builder().is_test(true).try_init();
+
+        let s = include_str!("../testdata/blocks.jsons");
+
+        let splited = s.split('\n');
+
+        let mut headers = Vec::new();
+
+        for s in splited {
+            if !s.is_empty() {
+                let h: alloy::rpc::types::Header = serde_json::from_str(s).unwrap();
+                let header: alloy::consensus::Header = h.try_into().unwrap();
+
+                headers.push(header);
+            }
+        }
+
+        let verifier = BlockVerifier::new(MockConensusVerifier, headers).unwrap();
+        verifier.verify().unwrap()
     }
 }
